@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Submit a Grievance &middot; Campus Grievance Desk{% endblock %}
+
+{% block content %}
+<div class="shell">
+
+    {% if submitted %}
+
+        <section class="card card--confirm" aria-labelledby="confirm-heading">
+            <span class="eyebrow eyebrow--success">Submitted</span>
+            <h1 id="confirm-heading">Your grievance has been logged.</h1>
+            <p class="lede">Keep the ticket below &mdash; it's the only way to check on this case later. It isn't shown or saved anywhere else.</p>
+
+            <div class="ticket">
+                <div class="ticket__row">
+                    <span class="ticket__label">Tracking ID</span>
+                    <button type="button" class="ticket__copy" data-copy="{{ tracking_id }}" aria-label="Copy tracking ID">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>
+                        <span class="ticket__copy-label">Copy</span>
+                    </button>
+                </div>
+                <div class="ticket__id">{{ tracking_id }}</div>
+                <div class="ticket__perf" aria-hidden="true"></div>
+                <p class="ticket__hint">Save this ID somewhere private &mdash; a notes app, not a shared device.</p>
+            </div>
+
+            <div class="action-row">
+                <a href="/" class="btn btn--ghost">Submit another</a>
+                <a href="/status" class="btn btn--primary">Track this grievance</a>
+            </div>
+        </section>
+
+    {% else %}
+
+        <section class="card" aria-labelledby="submit-heading">
+            <span class="eyebrow">No sign-in required</span>
+            <h1 id="submit-heading">Submit a grievance</h1>
+            <p class="lede">Describe what happened. You'll get a private tracking ID to follow up &mdash; nothing here is tied to your identity.</p>
+
+            <form method="POST" id="grievance-form" novalidate>
+
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="field">
+                    <label for="category">Category</label>
+                    <select name="category" id="category" required>
+                        <option value="" disabled selected>Choose the closest fit&hellip;</option>
+                        {% for c in categories %}
+                        <option value="{{ c }}">{{ c }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="field">
+                    <div class="field__header">
+                        <label for="description">Description</label>
+                        <span class="char-count" id="char-count">0 / 2000</span>
+                    </div>
+                    <textarea
+                        name="description"
+                        id="description"
+                        rows="7"
+                        maxlength="2000"
+                        placeholder="What happened, where, and when? Include only what you're comfortable sharing."
+                        required></textarea>
+                    <p class="field__error" id="description-error" hidden>Please add a description before submitting.</p>
+                </div>
+
+                <div class="notice">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                    This submission does not collect your name, email, or device information.
+                </div>
+
+                <button type="submit" class="btn btn--primary btn--block" id="submit-btn">
+                    <span class="btn__label">Submit grievance</span>
+                    <span class="btn__spinner" aria-hidden="true"></span>
+                </button>
+            </form>
+
+            <a class="text-link" href="/status">Already have a tracking ID? Check its status &rarr;</a>
+        </section>
+
+    {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard &middot; Campus Grievance Desk{% endblock %}
+
+{% block content %}
+<div class="shell shell--wide">
+
+    <div class="admin-head">
+        <div>
+            <span class="eyebrow">Admin</span>
+            <h1>Grievance dashboard</h1>
+        </div>
+        <a href="/" class="btn btn--ghost btn--small">Back to home</a>
+    </div>
+
+    <div class="stat-row">
+        <div class="stat-card">
+            <span class="stat-card__value">{{ stats.total }}</span>
+            <span class="stat-card__label">Total submissions</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-card__value">{{ stats.received }}</span>
+            <span class="stat-card__label">Received</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-card__value">{{ stats.in_review }}</span>
+            <span class="stat-card__label">In review</span>
+        </div>
+        <div class="stat-card stat-card--sage">
+            <span class="stat-card__value">{{ stats.resolved }}</span>
+            <span class="stat-card__label">Resolved</span>
+        </div>
+        <div class="stat-card stat-card--restricted">
+            <span class="stat-card__value">{{ stats.sensitive }}</span>
+            <span class="stat-card__label">Restricted cases</span>
+        </div>
+    </div>
+
+    {% macro status_badge(s) -%}
+        <span class="badge badge--{{ s|lower|replace(' ', '-') }}">{{ s }}</span>
+    {%- endmacro %}
+
+    {% macro grievance_table(rows, empty_text) -%}
+        {% if rows %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tracking ID</th>
+                        <th>Category</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                        <th>Severity</th>
+                        <th>Update</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for g in rows %}
+                    <tr>
+                        <td><span class="mono-id">{{ g[0] }}</span></td>
+                        <td>{{ g[1] }}</td>
+                        <td class="description-cell">{{ g[2] }}</td>
+                        <td>{{ status_badge(g[3]) }}</td>
+                        <td><span class="severity-dot severity-dot--{{ g[4] }}" aria-hidden="true"></span>{{ g[4] }}</td>
+                        <td>
+                            <form method="POST" class="admin-form">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="tracking_id" value="{{ g[0] }}">
+                                <select name="new_status">
+                                    {% for s in statuses %}
+                                    <option value="{{ s }}" {{ 'selected' if s == g[3] else '' }}>{{ s }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit" class="btn btn--small btn--primary">Update</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+            <p>{{ empty_text }}</p>
+        </div>
+        {% endif %}
+    {%- endmacro %}
+
+    <section class="admin-section">
+        <h2>General grievances</h2>
+        {{ grievance_table(general_rows, "No general grievances yet.") }}
+    </section>
+
+    <section class="admin-section admin-section--restricted">
+        <h2>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            Restricted &mdash; sensitive cases
+        </h2>
+        <p class="section-note">Harassment and bullying reports are separated here. Limit who has access to this section in real deployments.</p>
+        {{ grievance_table(sensitive_rows, "No sensitive-category cases right now.") }}
+    </section>
+
+</div>
+{% endblock %}

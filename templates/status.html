@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Track a Grievance &middot; Campus Grievance Desk{% endblock %}
+
+{% block content %}
+<div class="shell">
+
+    {% if found == True %}
+
+        <section class="card" aria-labelledby="found-heading">
+            <span class="eyebrow">Case found</span>
+            <h1 id="found-heading">Here's where things stand</h1>
+
+            <div class="ticket ticket--compact">
+                <div class="ticket__row">
+                    <span class="ticket__label">Tracking ID</span>
+                </div>
+                <div class="ticket__id">{{ tracking_id }}</div>
+                <div class="ticket__perf" aria-hidden="true"></div>
+                <p class="ticket__hint">Category: {{ category }}</p>
+            </div>
+
+            <div class="timeline" role="list">
+                {% for step in statuses %}
+                {% set step_index = loop.index0 %}
+                {% set current_index = statuses.index(status) %}
+                <div class="timeline__step {% if step_index < current_index %}is-done{% elif step_index == current_index %}is-current{% endif %}" role="listitem">
+                    <span class="timeline__dot" aria-hidden="true">
+                        {% if step_index < current_index %}
+                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
+                        {% endif %}
+                    </span>
+                    <span class="timeline__label">{{ step }}</span>
+                </div>
+                {% endfor %}
+            </div>
+
+            <p class="lede lede--tight">
+                Current status: <strong class="status-word">{{ status }}</strong>.
+                Check back with the same tracking ID any time &mdash; there's nothing else to do on your end.
+            </p>
+
+            <div class="action-row">
+                <a href="/" class="btn btn--ghost">Back to home</a>
+                <a href="/status" class="btn btn--primary">Check another ID</a>
+            </div>
+        </section>
+
+    {% elif found == False %}
+
+        <section class="card card--empty" aria-labelledby="notfound-heading">
+            <span class="empty-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            </span>
+            <h1 id="notfound-heading">No grievance matches that ID</h1>
+            <p class="lede">Double-check the ID for typos &mdash; it looks like <code>GRV-A1B2C3D4</code>. If you just submitted, make sure you copied the whole thing.</p>
+            <div class="action-row">
+                <a href="/status" class="btn btn--primary">Try again</a>
+                <a href="/" class="btn btn--ghost">Back to home</a>
+            </div>
+        </section>
+
+    {% else %}
+
+        <section class="card" aria-labelledby="track-heading">
+            <span class="eyebrow">Check on a case</span>
+            <h1 id="track-heading">Track a grievance</h1>
+            <p class="lede">Enter the tracking ID you were given when you submitted.</p>
+
+            <form method="POST" id="status-form" novalidate>
+
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="field">
+                    <label for="tracking_id">Tracking ID</label>
+                    <input
+                        type="text"
+                        name="tracking_id"
+                        id="tracking_id"
+                        class="mono-input"
+                        placeholder="GRV-A1B2C3D4"
+                        autocomplete="off"
+                        required>
+                </div>
+
+                <button type="submit" class="btn btn--primary btn--block" id="status-submit-btn">
+                    <span class="btn__label">Check status</span>
+                    <span class="btn__spinner" aria-hidden="true"></span>
+                </button>
+            </form>
+
+            <a class="text-link" href="/">Need to submit a new grievance instead? &rarr;</a>
+        </section>
+
+    {% endif %}
+
+</div>
+{% endblock %}
