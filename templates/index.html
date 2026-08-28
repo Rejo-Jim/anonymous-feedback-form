@@ -24,6 +24,17 @@
                 <p class="ticket__hint">Save this ID somewhere private &mdash; a notes app, not a shared device.</p>
             </div>
 
+            {% if attachment %}
+            <div class="attachment-preview">
+                <span class="attachment-preview__label">Attachment received &mdash; metadata stripped</span>
+                {% if attachment_kind == 'image' %}
+                <img src="{{ url_for('uploaded_file', filename=attachment) }}" alt="Uploaded attachment" class="attachment-preview__media">
+                {% else %}
+                <video src="{{ url_for('uploaded_file', filename=attachment) }}" class="attachment-preview__media" controls></video>
+                {% endif %}
+            </div>
+            {% endif %}
+
             <div class="action-row">
                 <a href="/" class="btn btn--ghost">Submit another</a>
                 <a href="/status" class="btn btn--primary">Track this grievance</a>
@@ -37,7 +48,7 @@
             <h1 id="submit-heading">Submit a grievance</h1>
             <p class="lede">Describe what happened. You'll get a private tracking ID to follow up &mdash; nothing here is tied to your identity.</p>
 
-            <form method="POST" id="grievance-form" novalidate>
+            <form method="POST" id="grievance-form" novalidate enctype="multipart/form-data">
 
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
@@ -64,6 +75,19 @@
                         placeholder="What happened, where, and when? Include only what you're comfortable sharing."
                         required></textarea>
                     <p class="field__error" id="description-error" hidden>Please add a description before submitting.</p>
+                </div>
+
+                <div class="field">
+                    <div class="field__header">
+                        <label for="attachment">Photo or video</label>
+                        <span class="field__optional">Optional</span>
+                    </div>
+                    <label for="attachment" class="file-drop" id="file-drop">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+                        <span class="file-drop__text" id="file-drop-text">Add a photo or video as evidence, or drop one here</span>
+                    </label>
+                    <input type="file" name="attachment" id="attachment" accept="image/png,image/jpeg,image/webp,video/mp4,video/quicktime,video/webm" class="file-input">
+                    <p class="field__hint">Images and videos are automatically re-saved with location, device, and timestamp metadata removed.</p>
                 </div>
 
                 <div class="notice">

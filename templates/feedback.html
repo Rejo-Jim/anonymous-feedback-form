@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Feedback &middot; Campus Grievance Desk{% endblock %}
+
+{% block content %}
+<div class="shell">
+
+    {% if submitted %}
+
+        <section class="card card--confirm" aria-labelledby="fb-confirm-heading">
+            <span class="eyebrow eyebrow--success">Thank you</span>
+            <h1 id="fb-confirm-heading">Your feedback has been recorded.</h1>
+            <p class="lede">This isn't linked to a grievance, a tracking ID, or anything about you. It just goes straight into what admins read.</p>
+
+            <div class="action-row">
+                <a href="/" class="btn btn--ghost">Back to home</a>
+                <a href="/feedback" class="btn btn--primary">Share more feedback</a>
+            </div>
+        </section>
+
+    {% else %}
+
+        <section class="card" aria-labelledby="fb-heading">
+            <span class="eyebrow">No sign-in required</span>
+            <h1 id="fb-heading">Feedback on this portal</h1>
+            <p class="lede">This is separate from grievances &mdash; use it to tell us what's working, what's confusing, or what should change about the process itself.</p>
+
+            <form method="POST" id="feedback-form" novalidate>
+
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="field">
+                    <div class="field__header">
+                        <label id="rating-label">How was your experience?</label>
+                        <span class="field__optional">Optional</span>
+                    </div>
+                    <div class="star-rating" role="radiogroup" aria-labelledby="rating-label" id="star-rating">
+                        <input type="hidden" name="rating" id="rating-value" value="">
+                        {% for i in range(1, 6) %}
+                        <button
+                            type="button"
+                            class="star-btn"
+                            data-value="{{ i }}"
+                            role="radio"
+                            aria-checked="false"
+                            aria-label="{{ i }} star{{ 's' if i > 1 else '' }}">
+                            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                                <path d="M12 2.5l2.9 6.4 6.9.7-5.2 4.7 1.5 6.9-6.1-3.6-6.1 3.6 1.5-6.9-5.2-4.7 6.9-.7L12 2.5Z" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="message">Message <span class="field__optional">Optional if you left a rating</span></label>
+                    <textarea
+                        name="message"
+                        id="message"
+                        rows="6"
+                        maxlength="2000"
+                        placeholder="What's working well, what's not, or what you'd change&hellip;"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn--primary btn--block" id="feedback-submit-btn">
+                    <span class="btn__label">Send feedback</span>
+                    <span class="btn__spinner" aria-hidden="true"></span>
+                </button>
+            </form>
+
+            <a class="text-link" href="/">Have an actual grievance to report instead? &rarr;</a>
+        </section>
+
+    {% endif %}
+
+</div>
+{% endblock %}

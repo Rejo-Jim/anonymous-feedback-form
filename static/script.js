@@ -69,6 +69,117 @@ if (grievanceForm && description && descriptionError) {
 }
 
 // ------------------------------------------------------------
+// Attachment field: show the chosen filename, support drag-and-drop
+// onto the drop zone, and give quick feedback on obviously-wrong files.
+// Actual validation (type/size/metadata stripping) happens server-side.
+// ------------------------------------------------------------
+const attachmentInput = document.getElementById("attachment");
+const fileDrop = document.getElementById("file-drop");
+const fileDropText = document.getElementById("file-drop-text");
+const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
+
+if (attachmentInput && fileDrop && fileDropText) {
+    const defaultText = fileDropText.textContent;
+
+    const showSelectedFile = () => {
+        const file = attachmentInput.files && attachmentInput.files[0];
+        if (!file) {
+            fileDropText.textContent = defaultText;
+            fileDrop.classList.remove("has-file");
+            return;
+        }
+        if (file.size > MAX_ATTACHMENT_BYTES) {
+            fileDropText.textContent = "That file is over 25 MB — please choose a smaller one.";
+            fileDrop.classList.remove("has-file");
+            attachmentInput.value = "";
+            return;
+        }
+        fileDropText.textContent = `${file.name} selected`;
+        fileDrop.classList.add("has-file");
+    };
+
+    attachmentInput.addEventListener("change", showSelectedFile);
+
+    ["dragenter", "dragover"].forEach((evt) => {
+        fileDrop.addEventListener(evt, (e) => {
+            e.preventDefault();
+            fileDrop.classList.add("is-dragover");
+        });
+    });
+
+    ["dragleave", "drop"].forEach((evt) => {
+        fileDrop.addEventListener(evt, (e) => {
+            e.preventDefault();
+            fileDrop.classList.remove("is-dragover");
+        });
+    });
+
+    fileDrop.addEventListener("drop", (e) => {
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+            attachmentInput.files = e.dataTransfer.files;
+            showSelectedFile();
+        }
+    });
+}
+
+// ------------------------------------------------------------
+// Feedback form: star rating widget + require rating or message
+// ------------------------------------------------------------
+const starRating = document.getElementById("star-rating");
+
+if (starRating) {
+    const hiddenInput = document.getElementById("rating-value");
+    const stars = Array.from(starRating.querySelectorAll(".star-btn"));
+
+    const paint = (value) => {
+        stars.forEach((star) => {
+            const starValue = Number(star.dataset.value);
+            star.classList.toggle("is-filled", starValue <= value);
+            star.setAttribute("aria-checked", starValue === value ? "true" : "false");
+        });
+    };
+
+    stars.forEach((star) => {
+        star.addEventListener("click", () => {
+            const value = Number(star.dataset.value);
+            // Clicking the currently-selected star clears the rating.
+            if (hiddenInput.value === String(value)) {
+                hiddenInput.value = "";
+                paint(0);
+            } else {
+                hiddenInput.value = String(value);
+                paint(value);
+            }
+        });
+        star.addEventListener("mouseenter", () => paint(Number(star.dataset.value)));
+        star.addEventListener("focus", () => paint(Number(star.dataset.value)));
+    });
+
+    starRating.addEventListener("mouseleave", () => paint(Number(hiddenInput.value) || 0));
+}
+
+const feedbackForm = document.getElementById("feedback-form");
+const feedbackMessage = document.getElementById("message");
+const feedbackRatingInput = document.getElementById("rating-value");
+
+if (feedbackForm && feedbackMessage && feedbackRatingInput) {
+    feedbackForm.addEventListener("submit", (event) => {
+        const hasMessage = feedbackMessage.value.trim().length > 0;
+        const hasRating = feedbackRatingInput.value.trim().length > 0;
+        if (!hasMessage && !hasRating) {
+            event.preventDefault();
+            feedbackMessage.focus();
+
+            const submitBtn = feedbackForm.querySelector("button[type='submit']");
+            if (submitBtn) {
+                submitBtn.classList.remove("is-loading");
+                submitBtn.disabled = false;
+            }
+        }
+    });
+}
+
+// ------------------------------------------------------------
 // Copy tracking ID to clipboard
 // ------------------------------------------------------------
 document.querySelectorAll("[data-copy]").forEach((button) => {

@@ -35,6 +35,34 @@
         </div>
     </div>
 
+    <section class="admin-section">
+        <h2>Unresolved grievances by category</h2>
+        {% if category_chart.total > 0 %}
+        <div class="chart-card">
+            <div class="chart-donut" style="background: conic-gradient({{ category_chart.gradient_css }});" role="img" aria-label="Pie chart of unresolved grievances by category">
+                <div class="chart-donut__hole">
+                    <span class="chart-donut__total">{{ category_chart.total }}</span>
+                    <span class="chart-donut__total-label">Unresolved</span>
+                </div>
+            </div>
+            <ul class="chart-legend">
+                {% for item in category_chart.slices %}
+                <li>
+                    <span class="chart-legend__swatch" style="background: {{ item.color }};" aria-hidden="true"></span>
+                    {{ item.label }}
+                    <span class="chart-legend__count">{{ item.count }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+            <p>No unresolved grievances right now.</p>
+        </div>
+        {% endif %}
+    </section>
+
     {% macro status_badge(s) -%}
         <span class="badge badge--{{ s|lower|replace(' ', '-') }}">{{ s }}</span>
     {%- endmacro %}
@@ -48,6 +76,7 @@
                         <th>Tracking ID</th>
                         <th>Category</th>
                         <th>Description</th>
+                        <th>Attachment</th>
                         <th>Status</th>
                         <th>Severity</th>
                         <th>Update</th>
@@ -56,9 +85,34 @@
                 <tbody>
                     {% for g in rows %}
                     <tr>
-                        <td><span class="mono-id">{{ g[0] }}</span></td>
+                        <td>
+                            <span class="mono-id">{{ g[0] }}</span>
+                            {% if g[6] %}
+                            <div class="related-badge">
+                                <span class="related-badge__label">Possible related grievance</span>
+                                <span class="related-badge__id">{{ g[6] }}</span>
+                                <span class="related-badge__score">{{ (g[7] * 100) | round | int }}% similar</span>
+                            </div>
+                            {% endif %}
+                        </td>
                         <td>{{ g[1] }}</td>
                         <td class="description-cell">{{ g[2] }}</td>
+                        <td>
+                            {% if g[5] %}
+                                {% if g[5].rsplit('.', 1)[-1].lower() in ['mp4', 'mov', 'webm'] %}
+                                <a href="{{ url_for('uploaded_file', filename=g[5]) }}" target="_blank" rel="noopener" class="attachment-link">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                                    Video
+                                </a>
+                                {% else %}
+                                <a href="{{ url_for('uploaded_file', filename=g[5]) }}" target="_blank" rel="noopener" class="attachment-thumb-link">
+                                    <img src="{{ url_for('uploaded_file', filename=g[5]) }}" alt="Attachment for {{ g[0] }}" class="attachment-thumb">
+                                </a>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">&mdash;</span>
+                            {% endif %}
+                        </td>
                         <td>{{ status_badge(g[3]) }}</td>
                         <td><span class="severity-dot severity-dot--{{ g[4] }}" aria-hidden="true"></span>{{ g[4] }}</td>
                         <td>
@@ -94,10 +148,45 @@
     <section class="admin-section admin-section--restricted">
         <h2>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
-            Restricted &mdash; sensitive cases
+             Sensitive cases
         </h2>
-        <p class="section-note">Harassment and bullying reports are separated here. Limit who has access to this section in real deployments.</p>
+        <p class="section-note">Harassment and bullying reports are separated here. </p>
         {{ grievance_table(sensitive_rows, "No sensitive-category cases right now.") }}
+    </section>
+
+    <section class="admin-section">
+        <h2>Portal feedback</h2>
+        <p class="section-note">General feedback on the process itself &mdash; not tied to any grievance.</p>
+        {% if feedback_rows %}
+        <div class="feedback-list">
+            {% for f in feedback_rows %}
+            <div class="feedback-card">
+                <div class="feedback-card__head">
+                    {% if f[0] %}
+                    <span class="feedback-card__stars" aria-label="{{ f[0] }} out of 5 stars">
+                        {% for i in range(1, 6) %}
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" class="{{ 'is-filled' if i <= f[0] else '' }}" aria-hidden="true"><path d="M12 2.5l2.9 6.4 6.9.7-5.2 4.7 1.5 6.9-6.1-3.6-6.1 3.6 1.5-6.9-5.2-4.7 6.9-.7L12 2.5Z" stroke-linejoin="round"/></svg>
+                        {% endfor %}
+                    </span>
+                    {% else %}
+                    <span class="text-muted">No rating</span>
+                    {% endif %}
+                    <span class="feedback-card__time">{{ f[2] }}</span>
+                </div>
+                {% if f[1] %}
+                <p class="feedback-card__message">{{ f[1] }}</p>
+                {% else %}
+                <p class="feedback-card__message feedback-card__message--empty">No message left.</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+            <p>No feedback submitted yet.</p>
+        </div>
+        {% endif %}
     </section>
 
 </div>
