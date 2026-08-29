@@ -124,6 +124,13 @@ def init_db():
         if "similarity_score" not in existing_cols:
             conn.execute("ALTER TABLE grievances ADD COLUMN similarity_score REAL")
 
+        # Migrate older databases created before resolution-satisfaction
+        # feedback existed. Stores only 'yes'/'no' against the grievance's
+        # own tracking ID - not tied to any identity, since none is
+        # collected for grievances in the first place.
+        if "satisfaction" not in existing_cols:
+            conn.execute("ALTER TABLE grievances ADD COLUMN satisfaction TEXT")
+
         # General site feedback is intentionally a separate, simpler table:
         # no tracking ID, no status, nothing that ties it back to a person
         # or a specific grievance.
@@ -496,7 +503,7 @@ def status():
         with get_db() as conn:
             result = conn.execute(
                 """
-                SELECT category, status
+                SELECT category, status, satisfaction
                 FROM grievances
                 WHERE tracking_id = ?
                 """,
@@ -505,7 +512,7 @@ def status():
 
         if result:
 
-            category, current_status = result
+            category, current_status, satisfaction = result
 
             return render_template(
                 "status.html",
@@ -513,6 +520,7 @@ def status():
                 tracking_id=tracking_id,
                 category=category,
                 status=current_status,
+                satisfaction=satisfaction,
                 statuses=VALID_STATUSES,
             )
 
@@ -527,6 +535,72 @@ def status():
         "status.html",
         found=None
     )
+
+
+# ---------------- RESOLUTION SATISFACTION ----------------
+# A lightweight "was this resolved to your satisfaction?" prompt shown on
+# the status page once a grievance is Resolved. Deliberately just a
+# yes/no against the grievance's own tracking ID - no new identifying
+# data is collected, and it doesn't touch the anonymous feedback table.
+
+@app.route("/status/satisfaction", methods=["POST"])
+def status_satisfaction():
+
+    validate_csrf()
+
+    if status_rate_limited(request.remote_addr):
+        abort(429, description="Too many attempts. Please try again later.")
+
+    tracking_id = request.form.get("tracking_id", "").strip()
+    satisfied = request.form.get("satisfied", "")
+
+    if satisfied not in ("yes", "no"):
+        abort(400, description="Invalid response.")
+
+    with get_db() as conn:
+        result = conn.execute(
+            "SELECT category, status FROM grievances WHERE tracking_id = ?",
+            (tracking_id,)
+        ).fetchone()
+
+        # Only recorded when the grievance exists and is actually
+        # Resolved - satisfaction on an open case doesn't mean anything yet.
+        if result and result[1] == "Resolved":
+            category = result[0]
+
+            if satisfied == "no":
+                # Not satisfied: reopen the case for another look. The
+                # 'no' answer itself is kept on the row so admins can see
+                # why it came back, until the next time admin explicitly
+                # updates its status (which clears satisfaction again).
+                new_status = "In Review"
+                conn.execute(
+                    "UPDATE grievances SET satisfaction = ?, status = ? WHERE tracking_id = ?",
+                    (satisfied, new_status, tracking_id)
+                )
+            else:
+                # Satisfied: just record it, nothing about the case changes.
+                new_status = "Resolved"
+                conn.execute(
+                    "UPDATE grievances SET satisfaction = ? WHERE tracking_id = ?",
+                    (satisfied, tracking_id)
+                )
+
+            conn.commit()
+
+            return render_template(
+                "status.html",
+                found=True,
+                tracking_id=tracking_id,
+                category=category,
+                status=new_status,
+                satisfaction=satisfied,
+                statuses=VALID_STATUSES,
+            )
+
+    # Unknown tracking ID or not yet resolved - fall back to the normal
+    # "not found" state rather than confirming which tracking IDs exist.
+    return render_template("status.html", found=False)
 
 
 # ---------------- FEEDBACK ----------------
@@ -650,10 +724,13 @@ def admin():
             if new_status not in VALID_STATUSES:
                 abort(400, description="Invalid status.")
 
+            # Clearing satisfaction here means each time a case is
+            # (re-)marked Resolved, the student sees a fresh, unanswered
+            # prompt rather than a stale answer from a previous cycle.
             cursor = conn.execute(
                 """
                 UPDATE grievances
-                SET status = ?
+                SET status = ?, satisfaction = NULL
                 WHERE tracking_id = ?
                 """,
                 (new_status, tracking_id)
@@ -675,7 +752,8 @@ def admin():
                    severity,
                    attachment,
                    similar_tracking_id,
-                   similarity_score
+                   similarity_score,
+                   satisfaction
             FROM grievances
             """
         ).fetchall()

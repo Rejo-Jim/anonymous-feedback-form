@@ -20,10 +20,20 @@ document.querySelectorAll("form").forEach((form) => {
         // Let native "required" validation block submission first.
         if (!form.checkValidity()) return;
 
-        const submitBtn = form.querySelector("button[type='submit']");
-        if (submitBtn && !submitBtn.classList.contains("is-loading")) {
+        // Use the button that was actually clicked (event.submitter), not
+        // just the first submit button in the form - some forms (like the
+        // satisfaction Yes/No form) have more than one, and disabling the
+        // wrong one - or disabling the right one too early - drops its
+        // name/value pair from the submitted form data entirely.
+        const submitBtn = event.submitter || form.querySelector("button[type='submit']");
+        if (submitBtn && submitBtn.tagName === "BUTTON" && !submitBtn.classList.contains("is-loading")) {
             submitBtn.classList.add("is-loading");
-            submitBtn.disabled = true;
+            // Defer the actual disabling to the next tick: disabling a
+            // submit button synchronously inside its own "submit" handler
+            // excludes it from the form data the browser is about to send
+            // (per the HTML spec), which silently strips out which button
+            // was pressed.
+            setTimeout(() => { submitBtn.disabled = true; }, 0);
         }
     });
 });

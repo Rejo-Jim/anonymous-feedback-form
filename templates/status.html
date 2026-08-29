@@ -23,9 +23,10 @@
                 {% for step in statuses %}
                 {% set step_index = loop.index0 %}
                 {% set current_index = statuses.index(status) %}
-                <div class="timeline__step {% if step_index < current_index %}is-done{% elif step_index == current_index %}is-current{% endif %}" role="listitem">
+                {% set is_final_done = step_index == current_index and status == "Resolved" %}
+                <div class="timeline__step {% if step_index < current_index or is_final_done %}is-done{% elif step_index == current_index %}is-current{% endif %}" role="listitem">
                     <span class="timeline__dot" aria-hidden="true">
-                        {% if step_index < current_index %}
+                        {% if step_index < current_index or is_final_done %}
                         <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
                         {% endif %}
                     </span>
@@ -38,6 +39,28 @@
                 Current status: <strong class="status-word">{{ status }}</strong>.
                 Check back with the same tracking ID any time &mdash; there's nothing else to do on your end.
             </p>
+
+            {% if satisfaction == "no" %}
+            <div class="satisfaction-note satisfaction-note--reopened">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 8v5M12 16h.01"/><circle cx="12" cy="12" r="9"/></svg>
+                Thanks for letting us know &mdash; this case has been reopened for another look.
+            </div>
+            {% elif satisfaction == "yes" %}
+            <div class="satisfaction-note">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+                Thanks &mdash; you told us this was resolved to your satisfaction.
+            </div>
+            {% elif status == "Resolved" %}
+            <div class="satisfaction-prompt">
+                <p class="satisfaction-prompt__question">Was this resolved to your satisfaction?</p>
+                <form method="POST" action="/status/satisfaction" class="satisfaction-prompt__form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="tracking_id" value="{{ tracking_id }}">
+                    <button type="submit" name="satisfied" value="yes" class="btn btn--ghost btn--small">Yes</button>
+                    <button type="submit" name="satisfied" value="no" class="btn btn--ghost btn--small">No</button>
+                </form>
+            </div>
+            {% endif %}
 
             <div class="action-row">
                 <a href="/" class="btn btn--ghost">Back to home</a>

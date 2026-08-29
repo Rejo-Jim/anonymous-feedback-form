@@ -392,6 +392,46 @@ textarea { resize: vertical; min-height: 140px; }
 
 .notice svg { flex-shrink: 0; margin-top: 2px; color: var(--slate); }
 
+/* Resolution satisfaction prompt (status page) */
+
+.satisfaction-prompt {
+    margin: 20px 0 0;
+    padding: 16px;
+    background: var(--sage-tint);
+    border-radius: var(--radius-md);
+}
+
+.satisfaction-prompt__question {
+    margin: 0 0 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--ink);
+}
+
+.satisfaction-prompt__form {
+    display: flex;
+    gap: 10px;
+}
+
+.satisfaction-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 20px 0 0;
+    padding: 12px 14px;
+    font-size: 0.85rem;
+    color: var(--sage);
+    background: var(--sage-tint);
+    border-radius: var(--radius-sm);
+}
+
+.satisfaction-note svg { flex-shrink: 0; margin-top: 2px; }
+
+.satisfaction-note--reopened {
+    color: var(--amber);
+    background: var(--amber-tint);
+}
+
 /* ============================================================
    Buttons
    ============================================================ */
@@ -890,6 +930,13 @@ tbody tr:last-child td { border-bottom: none; }
 tbody tr:hover { background: var(--navy-tint); }
 
 .mono-id { font-family: var(--font-mono); font-size: 0.85rem; }
+
+.satisfaction-chip {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 0.9rem;
+    line-height: 1;
+}
 
 .description-cell { max-width: 320px; }
 
